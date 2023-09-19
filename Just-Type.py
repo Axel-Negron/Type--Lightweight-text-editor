@@ -191,7 +191,10 @@ def open_settings():
 def rewrite():
     if(rewrite_config.get()):
         with open (config_file,'w') as file:
-            file.write(config_file)
+            config.set("Display","bg_color1",cur_bg1.get())
+            config.set("Display","bg_color2",cur_bg2.get())
+            config.set("Display","bg_color3",cur_bg3.get())
+            config.write(file)
 
 #########################################################
 
@@ -403,21 +406,29 @@ def appearance_colors(selector:int):
     match selector:
 
         case 1:
-            try: 
-                cur_bg1.set(askcolor()[1])
-            except:
+
+            color = askcolor()[1]
+            if color !=None:
+                cur_bg1.set(color)
+            else:    
+                cur_bg1.set(config['Display']['bg_color1'])
                 print('error picking color')
 
         case 2:
-            try: 
-                cur_bg2.set(askcolor()[1])
-            except:
+
+            color = askcolor()[1]
+            if color !=None:
+                cur_bg2.set(color)
+            else:    
+                cur_bg2.set(config['Display']['bg_color2'])
                 print('error picking color')
 
         case 3:
-            try: 
-                cur_bg3.set(askcolor()[1])
-            except:
+            color = askcolor()[1]
+            if color !=None:
+                cur_bg3.set(color)
+            else:    
+                cur_bg3.set(config['Display']['bg_color3'])
                 print('error picking color')
 
     color_updator()
