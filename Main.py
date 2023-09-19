@@ -7,11 +7,18 @@ from tkinter.colorchooser import askcolor
 
 window = Tk()
 data = StringVar()
+filepath = StringVar()
 window.title("Just Type")
 
 
+
+
+
 #Font variables#
+
+filepath.set('')
 cur_tags = IntVar()
+
 cur_tags.set(0)
 cur_font_name = StringVar()
 cur_font_size = IntVar()
@@ -19,8 +26,17 @@ cur_font_name.set('Calibri')
 cur_font_size.set(14)
 cur_font_color = StringVar()
 cur_font_color.set('#000000')
-cur_bg = StringVar()
-cur_bg.set("#edffd6")
+
+#Window colors
+
+cur_bg1 = StringVar()
+cur_bg1.set("#edffd6")
+cur_bg2 = StringVar()
+cur_bg2.set("#edffd6")
+cur_bg3 = StringVar()
+cur_bg3.set("#edffd6")
+
+############################
 cur_txt_addon = StringVar()
 cur_txt_addon.set('normal')
 
@@ -55,12 +71,26 @@ cur_font_size.set(size_values[5])
 
 
 def save_text_with_tags():
-    filepath = asksaveasfilename(defaultextension='.txt', filetypes=[
-                                 ("Text Files", "*.txt")])
-    if not filepath:
-        return
 
-    with open(filepath, "w") as file:
+    try:
+        path = filepath.get()
+        print("Log-Filepath")
+
+        if path=="":
+            path = asksaveasfilename(defaultextension='.txt', filetypes=[
+                                    ("Text Files", "*.txt")])
+            filepath.set(path)
+        
+    except:
+        print("Couldn't save, first time?")
+        path = asksaveasfilename(defaultextension='.txt', filetypes=[
+                                    ("Text Files", "*.txt")])
+    
+        if not filepath:
+            return
+        
+    
+    with open(path, "w") as file:
         # Dump the content and tags to the file
 
         for tag in txt.tag_names():
@@ -140,16 +170,20 @@ def open_settings():
 
 
 # Menu and Text Widget
-txt_menu = Frame(window, background=cur_bg.get(), height=40)
+txt_menu = Frame(window, background=cur_bg1.get(), height=40)
 txt_menu.pack(fill='x', pady=(0, 1))
 
-txt = Text(window, background=cur_bg.get(), font=(cur_font_name.get(
+txt = Text(window, background=cur_bg1.get(), font=(cur_font_name.get(
 ), cur_font_size.get()*2), foreground=cur_font_color.get(), undo=True, maxundo=20)
 txt.pack(expand=True, fill="both")
 
 
 # TXT functions
 ##########################################################
+def save_shrt(event):
+    save_text_with_tags()
+    return 
+
 
 def increase_font(event):
     if (cur_font_size.get()+2 <= 0):
@@ -352,14 +386,33 @@ def disp_paper_settings(wndw: Toplevel, alivebtn: list):
 
     for thing in alive_widgets:
         thing.destroy()
+    try:
+        if alivebtn[1]["state"] == NORMAL:
+            alivebtn[1]["state"] = DISABLED
 
-    if alivebtn[1]["state"] == NORMAL:
-        alivebtn[1]["state"] = DISABLED
+        if alivebtn[0]["state"] == DISABLED:
+            alivebtn[0]["state"] = NORMAL
+    except:
+        print("Font settings not alive")
 
-    if alivebtn[0]["state"] == DISABLED:
-        alivebtn[0]["state"] = NORMAL
+    # rr_paper = Frame(wndw)
+    # rr_paper.pack()
+    
+
+    
+    # rl_paper = Frame(wndw)
+    # rl_paper.pack()
+
+
+
+
+
 
     return
+
+
+
+    
 
 
 # Buttons
@@ -409,6 +462,7 @@ txt.bind("<Return>", enter_update)
 txt.bind("<space>", enter_update)
 txt.bind("<less>", decrease_font)
 txt.bind("<greater>", increase_font)
+txt.bind("<Control-s>",save_shrt)
 
 #################################
 
