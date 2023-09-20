@@ -14,7 +14,6 @@ data = StringVar()
 filepath = StringVar()
 window.title("Just Type")
 
-
 def load_config(config:configparser.ConfigParser):
 
     cur_font_name.set(config['Text']['font_name'])
@@ -78,12 +77,15 @@ load_config(config)
 i=IntVar()
 combo_set = 0
 for font in fonts:
-    if font=='Calibri':
+    if font=='Arial':
         combo_set= i.get()
         break
-    
     i.set(i.get()+1)
-
+    
+if i.get()>364:
+    i.set(1)
+    
+    
 #########################:##################################################
 
 
@@ -154,13 +156,37 @@ def load_text_with_tags():
 
 
 def enter_update(event):
-    update_txt(cur_font_name.get(), cur_font_size.get(), cur_tags.get())
-    print(event)
+    w_size = window.winfo_geometry()
+    insertpos = txt.index('insert')
+    if insertpos[-1] == '0' or txt.get(insertpos+'-1c')==" ":
+        i = 0
+        newcursorpos = ''
+        for char in insertpos:
+            if insertpos[i+1]=='.':
+                num = int(char)+1
+                newcursorpos+=str(num)+'.0'
+                break
+            else:
+                newcursorpos+=char
+                i+=1
+                
+        txt.insert(insertpos,'\n')
+        
+        
+    set_tag(cur_tags.get())
+    window.geometry(w_size)
+    txt.mark_set("insert", newcursorpos)
+    return
+
+def space_update(event):
+    w_size = window.winfo_geometry()
+    set_tag(cur_tags.get())
+    window.geometry(w_size)
     return
 
 
 def open_settings():
-
+    w_size = window.winfo_geometry()
     sidebar_wdth = '10'
     settings_wdw = Toplevel(window,background=cur_bg2.get())
     settings_wdw.geometry("590x500")
@@ -184,7 +210,7 @@ def open_settings():
     alive_btn.append(txt_settings_btn)
     alive_btn.append(paper_settings_btn)
 
-    
+    window.geometry(w_size)
 
     return
 
@@ -216,71 +242,49 @@ def save_shrt(event):
 
 
 def increase_font(event):
-    if (cur_font_size.get()+2 <= 0):
+    
+    w_size = window.winfo_geometry()
+    set_tag(cur_tags.get())
+    if (cur_font_size.get()+2 >= 100):
         return
     cur_font_size.set(cur_font_size.get()+2)
-    update_txt(cur_font_name.get(), cur_font_size.get(), cur_tags.get())
+    update_text(cur_font_name.get(),cur_font_size.get())
+    window.geometry(w_size)
+    
     return
 
 
 def decrease_font(event):
+    
+    w_size = window.winfo_geometry()
+    set_tag(cur_tags.get())
     if (cur_font_size.get()-2 <= 0):
         return
     cur_font_size.set(cur_font_size.get()-2)
-    update_txt(cur_font_name.get(), cur_font_size.get(), cur_tags.get())
+    update_text(cur_font_name.get(),cur_font_size.get())
+    window.geometry(w_size)
     return
 
 
 def txt_addons():
-
-    size = window.winfo_geometry()
     addons = []
     font_txt = ""
+        
+    if is_bold.get():
+        addons.append('bold')
 
-    txt.mark_set('space', INSERT+'-1c')
-    last_elm = txt.get('space')
-    if last_elm == " ":
-        update_txt(cur_font_name.get(), cur_font_size.get(), cur_tags.get())
-
-    if boldvar.get() or is_bold.get() != FALSE:
-        if is_bold.get() != 1:
-
-            addons.append('bold')
-            is_bold.set(1)
-        else:
-            is_bold.set(0)
-            boldvar.set(0)
-
-    if italicvar.get() or is_italic.get() != FALSE:
-        if is_italic.get() != 1:
-            addons.append('italic')
-            is_italic.set(1)
-
-        else:
-            is_italic.set(0)
-            boldvar.set(0)
-
-    if underlinevar.get() or is_underline.get() != FALSE:
-        if is_underline.get() != 1:
-            addons.append('underline')
-            is_underline.set(1)
-
-        else:
-            is_underline.set(0)
-            boldvar.set(0)
-
+    if is_italic.get():
+        addons.append('italic')
+        
+    if is_underline.get():
+        addons.append('underline')
+        
     for addon in addons:
-        font_txt += addon+''
+        font_txt += addon+' '
 
     cur_txt_addon.set(font_txt)
-
-    if font_txt != "":
-        txt.config(font=(cur_font_name.get(), cur_font_size.get()*2, font_txt))
-    else:
-        txt.config(font=(cur_font_name.get(), cur_font_size.get()*2))
-        pass
-
-    window.geometry(size)
+ 
+    return
 
 
 def get_last_position_of_final_tag(tag_name):
@@ -299,11 +303,19 @@ def clean_tags():
             txt.tag_delete(tag)
     return
 
-
-def update_txt(new_font, new_size, num: int):
+def update_text(new_font,new_size,):
     txt_addon = cur_txt_addon.get()
     if txt_addon == '' or None:
         txt_addon = 'normal'
+    cur_font_name.set(new_font)
+    cur_font_size.set(new_size)
+    txt.config(font=(cur_font_name.get(), cur_font_size.get()*2, txt_addon),
+               foreground=cur_font_color.get())
+    txt.pack(expand=True, fill="both")
+    
+
+def set_tag(num: int):
+    txt_addon = cur_txt_addon.get()
     clean_tags()
     size = window.winfo_geometry()
     tags = txt.tag_names()
@@ -315,7 +327,7 @@ def update_txt(new_font, new_size, num: int):
         pass
 
     elif txt.index(INSERT) == txt.index('end-1c'):
-        # check if tag was already made.
+
         last_tagpos = txt.tag_ranges(tags[-1])[1]
         txt.tag_add(num, last_tagpos, txt.index(INSERT))
         txt.tag_config(num, font=(cur_font_name.get(),
@@ -326,21 +338,16 @@ def update_txt(new_font, new_size, num: int):
         txt.mark_set("insert", txt.index('end-1c'))
         pass
 
-    cur_font_name.set(new_font)
-    cur_font_size.set(new_size)
-    txt.config(font=(cur_font_name.get(), cur_font_size.get()*2, txt_addon),
-               foreground=cur_font_color.get())
-    txt.pack(expand=True, fill="both")
-    cur_tags.set(num+1)
 
+    cur_tags.set(num+1)
     window.geometry(size)
     return
 
 
-def get_combobox_selected(combobox_font: ttk.Combobox, combobox_size: ttk.Combobox, cmb_num):
+def get_combobox_selected(combobox_font: ttk.Combobox, combobox_size: ttk.Combobox):
 
-    if (cmb_num == 1):
-        update_txt(combobox_font.get(), combobox_size.get(), cur_tags.get())
+    set_tag(cur_tags.get())
+    update_text(combobox_font, combobox_size)
 
     return
 
@@ -358,7 +365,6 @@ def color_updator():
     config.set('Display','bg_color3',cur_bg3.get())
     
 
-
 def change_font_color():
     try:
         color = askcolor()
@@ -372,34 +378,105 @@ def change_font_color():
 
 
 def underline_shrt(event):
-    if underlinevar.get()==1:
+    
+    if is_underline.get()==1:
+        set_tag(cur_tags.get())
+        is_underline.set(0)
         underlinevar.set(0)
         txt_addons()
+        update_text(cur_font_name.get(),cur_font_size.get())
+        
+
+  
         return
-    update_txt(cur_font_name.get(),cur_font_size.get(),cur_tags.get())
+    set_tag(cur_tags.get())
+    is_underline.set(1)
     underlinevar.set(1)
     txt_addons()
+    update_text(cur_font_name.get(),cur_font_size.get())
+
     
-
-
 def bold_shrt(event):
-    if boldvar.get()==1:
+    
+    if is_bold.get()==1:
+        set_tag(cur_tags.get())
+        is_bold.set(0)
         boldvar.set(0)
         txt_addons()
+        update_text(cur_font_name.get(),cur_font_size.get())
+        
+  
+     
         return
-    update_txt(cur_font_name.get(),cur_font_size.get(),cur_tags.get())
+    
+    
+    set_tag(cur_tags.get())
+    is_bold.set(1)
     boldvar.set(1)
     txt_addons()
-    
+    update_text(cur_font_name.get(),cur_font_size.get())
+
 
 def italic_shrt(event):
-    if italicvar.get()==1:
+    if is_italic.get()==1:
+        set_tag(cur_tags.get())
+        is_italic.set(0)
         italicvar.set(0)
         txt_addons()
+        update_text(cur_font_name.get(),cur_font_size.get())
+
+       
         return
-    update_txt(cur_font_name.get(),cur_font_size.get(),cur_tags.get())
+    set_tag(cur_tags.get())
+    is_italic.set(1)
     italicvar.set(1)
     txt_addons()
+    update_text(cur_font_name.get(),cur_font_size.get())
+  
+    
+def bold_toggle():
+    if boldvar.get():
+        set_tag(cur_tags.get())
+        is_bold.set(1)
+        txt_addons()
+        update_text(cur_font_name.get(),cur_font_size.get())
+
+        
+    else:
+        set_tag(cur_tags.get())
+        is_bold.set(0)
+        txt_addons()
+        update_text(cur_font_name.get(),cur_font_size.get())
+        
+        
+def underline_toggle():
+    if underlinevar.get():
+        set_tag(cur_tags.get())
+        is_underline.set(1)
+        txt_addons()
+        update_text(cur_font_name.get(),cur_font_size.get())
+
+        
+    else:
+        set_tag(cur_tags.get())
+        is_underline.set(0)
+        txt_addons()
+        update_text(cur_font_name.get(),cur_font_size.get())
+        
+        
+def italic_toggle():
+    if italicvar.get():
+        set_tag(cur_tags.get())
+        is_italic.set(1)
+        txt_addons()
+        update_text(cur_font_name.get(),cur_font_size.get())
+
+        
+    else:
+        set_tag(cur_tags.get())
+        is_italic.set(0)
+        txt_addons()
+        update_text(cur_font_name.get(),cur_font_size.get())
     
 
 def appearance_colors(selector:int):
@@ -473,7 +550,7 @@ def disp_txt_settings(wndw: Toplevel, alivebtn: list):
     font_boxes.pack()
 
     font_cmbx_apply = Button(rr_view, command=lambda: get_combobox_selected(
-        font_name_cmbx, font_size_cmbx, cur_tags.get()), text="Apply",background=cur_bg3.get(),foreground=cur_font_color.get(), pady=15, width=5)
+        font_name_cmbx, font_size_cmbx), text="Apply",background=cur_bg3.get(),foreground=cur_font_color.get(), pady=15, width=5)
     
     font_cmbx_apply.pack()
 
@@ -558,7 +635,7 @@ def disp_paper_settings(wndw: Toplevel, alivebtn: list):
 
 
 ######################################################## Buttons
-font_cmb = ttk.Combobox(txt_menu, values=fonts, width=10)
+font_cmb = ttk.Combobox(txt_menu, values=fonts, width=30)
 font_cmb.current(i.get())
 font_cmb.pack(side=LEFT)
 
@@ -567,15 +644,15 @@ size_cmb.current(4)
 size_cmb.pack(side=LEFT)
 
 bold_check = Checkbutton(txt_menu, text='Bold', font=(cur_font_name.get(
-), 12, 'bold'), foreground=cur_font_color.get(),background=cur_bg3.get(),onvalue=True, offvalue=False, variable=boldvar, command=txt_addons)
+), 12, 'bold'), foreground=cur_font_color.get(),background=cur_bg3.get(),onvalue=True, offvalue=False, variable=boldvar, command=bold_toggle)
 italic_check = Checkbutton(txt_menu, text='Italic', font=(cur_font_name.get(
-), 12, 'italic'),foreground=cur_font_color.get(),background=cur_bg3.get() ,onvalue=True, offvalue=False, variable=italicvar, command=txt_addons)
+), 12, 'italic'),foreground=cur_font_color.get(),background=cur_bg3.get() ,onvalue=True, offvalue=False, variable=italicvar, command=italic_toggle)
 
 underline_check = Checkbutton(txt_menu, text='Underline', font=(cur_font_name.get(
-), 12, 'underline'),foreground=cur_font_color.get() ,background=cur_bg3.get(),onvalue=True, offvalue=False, variable=underlinevar, command=txt_addons)
+), 12, 'underline'),foreground=cur_font_color.get() ,background=cur_bg3.get(),onvalue=True, offvalue=False, variable=underlinevar, command=underline_toggle)
 
-apply_btn = Button(txt_menu, foreground=cur_font_color.get(),background=cur_bg3.get(),text="Update", width=5, height=1, command=lambda: update_txt(
-    font_cmb.get(), size_cmb.get(), cur_tags.get()))
+apply_btn = Button(txt_menu, foreground=cur_font_color.get(),background=cur_bg3.get(),text="Update", width=5, height=1, command=lambda: get_combobox_selected(
+    font_cmb.get(), size_cmb.get()))
 apply_btn.pack(side=LEFT)
 bold_check.pack(side=LEFT, padx=3)
 italic_check.pack(side=LEFT, padx=3)
@@ -586,7 +663,7 @@ window.config(menu=menu)
 filemenu = Menu(menu)
 
 
-photo = PhotoImage(file="imgs\icon.png")
+photo = PhotoImage(file="imgs/icon.png")
 window.wm_iconphoto(False, photo)
 
 menu.add_cascade(label='File', menu=filemenu)
@@ -600,7 +677,7 @@ filemenu.add_command(label='Settings', command=open_settings)
 ##################################################### Keybinds
 
 txt.bind("<Return>", enter_update)
-txt.bind("<space>", enter_update)
+txt.bind("<space>", space_update)
 txt.bind("<less>", decrease_font)
 txt.bind("<greater>", increase_font)
 txt.bind("<Control-s>",save_shrt)
