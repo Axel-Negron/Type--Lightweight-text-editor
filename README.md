@@ -2,6 +2,10 @@
 
 Just Type is a lightweight text editor designed for quick note-taking and text editing. It provides a simple and efficient interface for users who want to jot down ideas, notes, or any text-based information swiftly. With Just Type, you can enjoy features like multiple fonts per file, on-the-fly font size adjustments, cross-platform compatibility (Linux and Windows), file saving and restoration, and full customization of the editor's colors and text settings.
 
+## Images
+
+![Screenshot](https://github.com/Axel-Negron/Type--Lightweight-text-editor/blob/main/imgs/Screenshot%202023-09-20%20111729.png)
+
 ## Features
 
 - **Multiple Fonts**: Just Type allows you to use different fonts within a single document, making it easy to format and structure your text as needed.
