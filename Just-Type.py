@@ -5,6 +5,7 @@ from tkinter import ttk
 from tkinter.colorchooser import askcolor
 import configparser
 import webbrowser
+import re
 
 
 ############################Init####################################
@@ -97,10 +98,10 @@ if i.get() > 364:
 
 
 def save_text_with_tags():
-
+    set_tag(cur_tags.get())
     try:
         path = filepath.get()
-        print("Log-Filepath")
+        print(f"Log-{path}")
 
         if path == "":
             path = asksaveasfilename(defaultextension='.txt', filetypes=[
@@ -112,7 +113,7 @@ def save_text_with_tags():
         path = asksaveasfilename(defaultextension='.txt', filetypes=[
             ("Text Files", "*.txt")])
 
-        if not filepath:
+        if not filepath.get():
             return
 
     with open(path, "w") as file:
@@ -128,32 +129,46 @@ def save_text_with_tags():
             font_from_tag = tag_config['font'][4]
             foreground_from_tag = tag_config['foreground'][4]
             tag_range = txt.tag_ranges(tag)
-            file.write(
-                f"{temp_text},{tag_range[0]},{tag_range[1]},{font_from_tag},{foreground_from_tag}\n")
+            saved_text = f"({temp_text}),({tag_range[0]}),({tag_range[1]}),({font_from_tag}),({foreground_from_tag})\n"
+            custom_data = saved_text.replace('\n', '||newline||')
+            custom_data = custom_data+"\n"
+            file.write(custom_data)
             pass
-    window.title(f'Just Type - {filepath}')
+    window.title(f'Just Type - {filepath.get()}')
 
 
 def load_text_with_tags():
-    filepath = askopenfilename(filetypes=[("Text Files", "*.txt")])
-    if not filepath:
+    filepath.set(askopenfilename(filetypes=[("Text Files", "*.txt")]))
+    
+    if not filepath.get():
         return
 
     # Clear the current content and tags in the Text widget
-    txt.delete("1.0", END)
+    txt.delete("1.0", END)  
     data = []
-    with open(filepath, "r") as file:
+    pattern = r'\((.*?)\)' 
+    with open(filepath.get(), "r") as file:
         for line in file:
-            temp = line[:len(line)-1]
-            temp = temp.split(",")
-            data.append(temp)
+            temp = re.findall(pattern,line)
+            text = list(temp)
+            data.append(text)
             pass
     cur_tags.set(0)
     for entry in data:
+        try:            
+            temp_text = entry[0].replace('||newline||', '\n')
+            entry[0] = temp_text
+            
+        except:
+            pass
+        
+        if(len(entry)==1):
+            continue
         txt.insert(entry[1], entry[0])
         txt.tag_add(cur_tags.get(), entry[1], entry[2])
         txt.tag_config(cur_tags.get(), font=entry[3], foreground=entry[4])
         cur_tags.set(cur_tags.get()+1)
+    window.title(f'Just type-{filepath.get()}')
 
     return
 
@@ -184,9 +199,11 @@ def enter_update(event):
 
 
 def space_update(event):
-    cur_pos.set(txt.index(INSERT))
     w_size = window.winfo_geometry()
+    cur_pos.set(txt.index(INSERT))
+    txt.insert(INSERT," ")
     set_tag(cur_tags.get())
+    txt.mark_set('insert',cur_pos.get()+'+1c')
     window.geometry(w_size)
     return
 
@@ -251,7 +268,7 @@ txt_menu = Frame(window, background=cur_bg1.get(), height=40)
 txt_menu.pack(fill='x', pady=(0, 1))
 
 txt = Text(window, background=cur_bg1.get(), font=(cur_font_name.get(
-), cur_font_size.get()*2), foreground=cur_font_color.get(), undo=True, maxundo=20)
+), cur_font_size.get()*2), foreground=cur_font_color.get(), undo=True, maxundo=20,highlightcolor=cur_font_color.get(),insertbackground=cur_font_color.get())
 txt.pack(expand=True, fill="both")
 
 
@@ -261,6 +278,23 @@ def save_shrt(event):
     save_text_with_tags()
     return
 
+def get_word_range():
+    iterator =2
+    found = 0
+     
+    while not found:
+        curpos = f"-{iterator}c"
+        if txt.get(INSERT+curpos)==' ':
+            found = 1
+            break
+        elif txt.get(INSERT+curpos) == '\n':
+            
+            return INSERT
+        
+        else:
+            iterator +=1
+        
+    return INSERT+curpos
 
 def increase_font(event):
 
@@ -357,8 +391,16 @@ def set_tag(num: int):
         pass
 
     else:
-        txt.mark_set("insert", txt.index('end-1c'))
-        pass
+        last_space = get_word_range()
+        if last_space == 0:
+            return
+        
+        else:
+            txt.tag_add(num, last_space, txt.index(INSERT))    
+            txt.tag_config(num, font=(cur_font_name.get(),  
+                        cur_font_size.get()*2, txt_addon), foreground=cur_font_color.get())  
+            
+            
 
     cur_tags.set(num+1)
     window.geometry(size)
@@ -429,7 +471,7 @@ def bold_shrt(event):
 
     set_tag(cur_tags.get())
     is_bold.set(1)
-    boldvar.set(1)
+    boldvar.set(1)  
     txt_addons()
     update_text(cur_font_name.get(), cur_font_size.get())
     txt.mark_set('insert', INSERT+'+1c')
@@ -496,6 +538,18 @@ def italic_toggle():
 
 def callback(url):
     webbrowser.open_new_tab(url)
+
+
+def quick_font(event):
+    set_tag(cur_tags.get())
+    update_text(font_cmb.get(),cur_font_size.get())
+    return
+
+
+def quick_size(event):
+    set_tag(cur_tags.get())
+    update_text(cur_font_name.get(),size_cmb.get())
+    return
 
 
 def appearance_colors(selector: int):
@@ -746,8 +800,10 @@ txt.bind("<less>", decrease_font)
 txt.bind("<greater>", increase_font)
 txt.bind("<Control-s>", save_shrt)
 txt.bind("<Control-u>", underline_shrt)
-txt.bind("<Control-b>", bold_shrt)
-txt.bind("<Control-i>", italic_shrt)
+txt.bind("<Control-Shift-T>", bold_shrt)
+txt.bind("<Control-Shift-Y>", italic_shrt)
+font_cmb.bind("<<ComboboxSelected>>",quick_font)
+size_cmb.bind("<<ComboboxSelected>>",quick_size)
 
 #####################################################
 
